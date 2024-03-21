@@ -51,7 +51,7 @@ class gradCAM:
 
         return activation, gradients
 
-    def generate_cam(self, input_image, is_individual=False, target_class=None, adjusted_resolution=False):
+    def generate_cam(self, input_image, target_class=None, adjusted_resolution=False):
         # self.model.eval()
         output = self.model(input_image)
         self.model.zero_grad()
@@ -78,21 +78,12 @@ class gradCAM:
                 cam += w * activation[k, :, :]
             # for idx, v in enumerate(activation):
             #     cam += np.dot(np.mean(gradients, axis=0), activation[idx, :, :])
-            if is_individual:
+            if target_class is not None:
                 cam = np.maximum(cam, 0)
             if adjusted_resolution:
                 cam = cv2.resize(cam, (input_image.size(2), input_image.size(3)))
         # 2채널 이미지 입니다. (여기서는 1차원데이터의 12리드)
         elif len(input_image.shape) == 3:
-            weights = np.mean(gradients, axis=(0, 1))
-            # cam = np.dot(activation.T, weights).T
-            # for k, w in enumerate(weights):
-            #     cam += w * activation[k, :]
-            # # if is_individual:
-            # #     cam = np.maximum(cam, 0)
-            # if adjusted_resolution:
-            #     cam = cv2.resize(cam, (input_image.size(1), input_image.size(2)))
-
             # 테스트 - 코드
             weights = np.mean(gradients, axis=(0))
             cam = np.zeros(activation.shape[1:], dtype=np.float32)
@@ -103,17 +94,7 @@ class gradCAM:
             cam = np.mean(activation, axis=0).squeeze()
             cam = np.maximum(cam, 0)
             cam = cam / np.max(cam)
-            # cam = (cam - np.min(cam)) / np.ptp(cam) # 정규화
 
-            # # 320x16
-            # weights = np.mean(gradients, axis=1, keepdims=True)
-            # cam = np.squeeze(np.matmul(weights.T, activation))
-            # # cam = np.maximum(cam, 0) / np.max(cam) # 음수 값 제거 후 정규화
-            # cam = (cam - np.min(cam)) / np.ptp(cam) # 음수 값 보존 정규화
-
-        # if is_individual:
-        #     cam = cam - np.min(cam)
-        #     cam = cam / np.max(cam)
         return cam, activation, gradients
 
     @staticmethod
